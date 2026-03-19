@@ -1,10 +1,16 @@
 #!/usr/bin/env bun
 
+import { runRun } from "./commands/run";
+import { runList } from "./commands/list";
+import { runPermit } from "./commands/permit";
+import { runRevoke } from "./commands/revoke";
+import { runStatus } from "./commands/status";
+import { runRefresh } from "./commands/refresh";
+
 const args = process.argv.slice(2);
 const command = args[0];
 
-if (!command || command === "--help" || command === "-h") {
-  console.log(`Usage: ni-gate <command>
+const USAGE = `Usage: ni-gate <command>
 
 Commands:
   run <vars> -- <command>   Run command with secrets injected
@@ -12,9 +18,58 @@ Commands:
   permit <var> <level>      Set permission level (always|ask|deny)
   revoke <var>              Set permission to deny
   status                    Show current permission rules
-  refresh                   Re-scan backend and rebuild cache`);
-  process.exit(0);
+  refresh                   Re-scan backend and rebuild cache`;
+
+async function main() {
+  if (!command || command === "--help" || command === "-h") {
+    console.log(USAGE);
+    process.exit(0);
+  }
+
+  switch (command) {
+    case "run": {
+      const exitCode = await runRun(args.slice(1));
+      process.exit(exitCode);
+      break;
+    }
+    case "list": {
+      await runList();
+      break;
+    }
+    case "permit": {
+      const varName = args[1];
+      const level = args[2];
+      if (!varName || !level) {
+        console.error("ni-gate: usage: ni-gate permit <var> <level>");
+        process.exit(4);
+      }
+      await runPermit(varName, level);
+      break;
+    }
+    case "revoke": {
+      const varName = args[1];
+      if (!varName) {
+        console.error("ni-gate: usage: ni-gate revoke <var>");
+        process.exit(4);
+      }
+      await runRevoke(varName);
+      break;
+    }
+    case "status": {
+      await runStatus();
+      break;
+    }
+    case "refresh": {
+      await runRefresh();
+      break;
+    }
+    default:
+      console.error(`ni-gate: unknown command "${command}". Run "ni-gate --help" for usage.`);
+      process.exit(4);
+  }
 }
 
-console.error(`ni-gate: unknown command "${command}". Run "ni-gate --help" for usage.`);
-process.exit(4);
+main().catch((err) => {
+  console.error(`ni-gate: ${err.message}`);
+  process.exit(1);
+});

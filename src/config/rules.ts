@@ -77,3 +77,7 @@ export function setVarPermission(rules: Rules, varName: string, level: Permissio
     rules.vars[varName] = level;
   }
 }
+
+export function setVarRule(rules: Rules, varName: string, rule: VarRule): void {
+  rules.vars[varName] = rule;
+}

@@ -2,7 +2,7 @@
 
 import { runRun } from "./commands/run";
 import { runList } from "./commands/list";
-import { runPermit } from "./commands/permit";
+import { runPermit, parsePermitFlags } from "./commands/permit";
 import { runRevoke } from "./commands/revoke";
 import { runStatus } from "./commands/status";
 import { runRefresh } from "./commands/refresh";
@@ -15,7 +15,8 @@ const USAGE = `Usage: ni-gate <command>
 Commands:
   run <vars> -- <command>   Run command with secrets injected
   list                      Show available secret names
-  permit <var> <level>      Set permission level (always|ask|deny)
+  permit <var> <level> [--commands cmd1,cmd2] [--urls pattern1,pattern2] [--force]
+                            Set permission with scope
   revoke <var>              Set permission to deny
   status                    Show current permission rules
   refresh                   Re-scan backend and rebuild cache`;
@@ -40,10 +41,12 @@ async function main() {
       const varName = args[1];
       const level = args[2];
       if (!varName || !level) {
-        console.error("ni-gate: usage: ni-gate permit <var> <level>");
+        console.error("ni-gate: usage: ni-gate permit <var> <level> --commands <cmd> [--urls <pattern>] [--force]");
         process.exit(4);
       }
-      await runPermit(varName, level);
+      const flags = parsePermitFlags(args.slice(3));
+      const exitCode = await runPermit(varName, level, flags);
+      process.exit(exitCode);
       break;
     }
     case "revoke": {

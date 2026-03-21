@@ -53,7 +53,7 @@ export async function runRun(args: string[], opts: RunOptions = {}): Promise<num
       approvedVars.push(varName);
     } else if (perm === "deny") {
       process.stderr.write(
-        `ni-gate: ACCESS_DENIED — var "${varName}" exists but access denied. Ask user to run: ni-gate permit ${varName} <level>\n`
+        `ni-gate: ACCESS_DENIED — var "${varName}" is denied. Ask user to run:\n  ni-gate permit ${varName} always --commands ${commandBinary}\n`
       );
       return 11;
     } else if (perm === "ask" || perm === null) {
@@ -70,7 +70,7 @@ export async function runRun(args: string[], opts: RunOptions = {}): Promise<num
     if (!hasTTY()) {
       for (const v of needsPrompt) {
         process.stderr.write(
-          `ni-gate: ACCESS_DENIED — var "${v.name}" requires approval but no TTY. Ask user to run: ni-gate permit ${v.name} always\n`
+          `ni-gate: ACCESS_DENIED — var "${v.name}" requires approval. Ask user to run:\n  ni-gate permit ${v.name} always --commands ${commandBinary}\n`
         );
       }
       return 11;

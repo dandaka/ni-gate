@@ -1,19 +1,13 @@
 import { SecretNotFoundError, type SecretBackend } from "./interface";
 
-export function parseInfisicalListOutput(stdout: string): string[] {
-  const names: string[] = [];
-  for (const line of stdout.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("┌") || trimmed.startsWith("├") ||
-        trimmed.startsWith("└") || trimmed.startsWith("│ SECRET")) continue;
-    if (trimmed.startsWith("│")) {
-      const cols = trimmed.split("│").map(c => c.trim()).filter(Boolean);
-      if (cols.length > 0 && cols[0] && !cols[0].includes(" ")) {
-        names.push(cols[0]);
-      }
-    }
-  }
-  return names;
+interface InfisicalSecret {
+  secretKey: string;
+  [key: string]: unknown;
+}
+
+export function parseInfisicalJsonOutput(stdout: string): string[] {
+  const secrets: InfisicalSecret[] = JSON.parse(stdout);
+  return secrets.map(s => s.secretKey).filter(Boolean);
 }
 
 export class InfisicalBackend implements SecretBackend {
@@ -27,16 +21,16 @@ export class InfisicalBackend implements SecretBackend {
 
   async list(): Promise<string[]> {
     const proc = Bun.spawn(
-      ["infisical", "secrets", "list", "--projectId", this.projectId, "--env", this.env],
+      ["infisical", "secrets", "--projectId", this.projectId, "--env", this.env, "-o", "json"],
       { stdout: "pipe", stderr: "pipe" }
     );
     const exitCode = await proc.exited;
     if (exitCode !== 0) {
       const stderr = await new Response(proc.stderr).text();
-      throw new Error(`infisical secrets list failed (exit ${exitCode}): ${stderr}`);
+      throw new Error(`infisical secrets failed (exit ${exitCode}): ${stderr}`);
     }
     const stdout = await new Response(proc.stdout).text();
-    return parseInfisicalListOutput(stdout);
+    return parseInfisicalJsonOutput(stdout);
   }
 
   async get(name: string): Promise<string> {

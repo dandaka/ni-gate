@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { InfisicalBackend, parseInfisicalListOutput } from "../../src/backends/infisical";
+import { InfisicalBackend, parseInfisicalJsonOutput } from "../../src/backends/infisical";
 
 describe("InfisicalBackend", () => {
   test("implements SecretBackend interface", () => {
@@ -14,22 +14,18 @@ describe("InfisicalBackend", () => {
   });
 });
 
-describe("parseInfisicalListOutput", () => {
-  test("parses table output", () => {
-    const output = `
-┌─────────────────────┬─────────────┐
-│ SECRET NAME         │ SECRET VALUE│
-├─────────────────────┼─────────────┤
-│ TELEGRAM_BOT_TOKEN  │ ***         │
-│ LINEAR_API_KEY      │ ***         │
-│ GITHUB_TOKEN        │ ***         │
-└─────────────────────┴─────────────┘
-`;
-    const names = parseInfisicalListOutput(output);
+describe("parseInfisicalJsonOutput", () => {
+  test("parses JSON output", () => {
+    const output = JSON.stringify([
+      { secretKey: "TELEGRAM_BOT_TOKEN", secretValue: "***" },
+      { secretKey: "LINEAR_API_KEY", secretValue: "***" },
+      { secretKey: "GITHUB_TOKEN", secretValue: "***" },
+    ]);
+    const names = parseInfisicalJsonOutput(output);
     expect(names).toEqual(["TELEGRAM_BOT_TOKEN", "LINEAR_API_KEY", "GITHUB_TOKEN"]);
   });
 
-  test("returns empty for empty output", () => {
-    expect(parseInfisicalListOutput("")).toEqual([]);
+  test("returns empty for empty array", () => {
+    expect(parseInfisicalJsonOutput("[]")).toEqual([]);
   });
 });
